@@ -6,24 +6,21 @@ pub fn build(b: *Builder) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    const module = b.addModule(.{
-        .name = "okredis",
+    _ = b.addModule("okredis", .{
         .source_file = .{ .path = "src/okredis.zig" },
     });
 
-    _ = module;
-
     const tests = b.addTest(.{
+        .name = "debug test",
         .root_source_file = .{ .path = "src/okredis.zig" },
         .target = target,
         .optimize = optimize,
     });
-    tests.setNamePrefix("debug test");
 
     const test_step = b.step("test", "Run all tests in debug mode.");
     test_step.dependOn(&tests.step);
 
-    const build_docs = b.addSystemCommand(&[_][]const u8{
+    const build_docs = b.addSystemCommand(&.{
         b.zig_exe,
         "test",
         "src/okredis.zig",
@@ -31,7 +28,7 @@ pub fn build(b: *Builder) void {
         // "x86_64-linux",
         "-femit-docs",
         "-fno-emit-bin",
-        "--output-dir",
+        // "--output-dir",
         ".",
     });
 

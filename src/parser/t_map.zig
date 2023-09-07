@@ -25,7 +25,7 @@ pub const MapParser = struct {
             },
             .Struct => |stc| {
                 for (stc.fields) |f|
-                    if (f.field_type == *anyopaque)
+                    if (f.type == *anyopaque)
                         return false;
                 return true;
             },
@@ -55,7 +55,7 @@ pub const MapParser = struct {
         // TODO: write real implementation
         var buf: [100]u8 = undefined;
         var end: usize = 0;
-        for (buf, 0..) |*elem, i| {
+        for (&buf, 0..) |*elem, i| {
             const ch = try msg.readByte();
             elem.* = ch;
             if (ch == '\r') {
@@ -105,7 +105,7 @@ pub const MapParser = struct {
                     } else {
                         // Differently from the Lists case, here we can't `continue` immediately on fail
                         // because then we would lose count of how many tokens we consumed.
-                        var key = rootParser.parseAlloc(std.meta.fieldInfo(T.Entry, .key_ptr).field_type, allocator.ptr, msg) catch |err| switch (err) {
+                        var key = rootParser.parseAlloc(std.meta.fieldInfo(T.Entry, .key_ptr).type, allocator.ptr, msg) catch |err| switch (err) {
                             error.GotNilReply => blk: {
                                 foundNil = true;
                                 break :blk undefined;
@@ -116,7 +116,7 @@ pub const MapParser = struct {
                             },
                             else => return err,
                         };
-                        var val = rootParser.parseAlloc(std.meta.fieldInfo(T.Entry, .value_ptr).field_type, allocator.ptr, msg) catch |err| switch (err) {
+                        var val = rootParser.parseAlloc(std.meta.fieldInfo(T.Entry, .value_ptr).type, allocator.ptr, msg) catch |err| switch (err) {
                             error.GotNilReply => blk: {
                                 foundNil = true;
                                 break :blk undefined;
@@ -226,9 +226,9 @@ pub const MapParser = struct {
                         inline for (stc.fields) |f| {
                             if (std.mem.eql(u8, f.name, hash_field.toSlice())) {
                                 @field(result, f.name) = (if (@hasField(@TypeOf(allocator), "ptr"))
-                                    rootParser.parseAlloc(f.field_type, allocator.ptr, msg)
+                                    rootParser.parseAlloc(f.type, allocator.ptr, msg)
                                 else
-                                    rootParser.parse(f.field_type, msg)) catch |err| switch (err) {
+                                    rootParser.parse(f.type, msg)) catch |err| switch (err) {
                                     error.GotNilReply => blk: {
                                         foundNil = true;
                                         break :blk undefined;

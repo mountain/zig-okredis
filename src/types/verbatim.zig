@@ -44,7 +44,7 @@ pub const Verbatim = struct {
                         // TODO: write real implementation
                         var buf: [100]u8 = undefined;
                         var end: usize = 0;
-                        for (buf, 0..) |*elem, i| {
+                        for (&buf, 0..) |*elem, i| {
                             const ch = try msg.readByte();
                             elem.* = ch;
                             if (ch == '\r') {
@@ -98,7 +98,8 @@ test "verbatim" {
     const allocator = std.heap.page_allocator;
 
     {
-        const reply = try Verbatim.Redis.Parser.parseAlloc('+', parser, allocator, MakeSimpleString().reader());
+        var msstr = MakeSimpleString();
+        const reply = try Verbatim.Redis.Parser.parseAlloc('+', parser, allocator, msstr.reader());
         try testing.expectEqualSlices(u8, "Yayyyy I'm a string!", reply.string);
         switch (reply.format) {
             else => unreachable,
@@ -107,7 +108,8 @@ test "verbatim" {
     }
 
     {
-        const reply = try Verbatim.Redis.Parser.parseAlloc('$', parser, allocator, MakeBlobString().reader());
+        var mbs = MakeBlobString();
+        const reply = try Verbatim.Redis.Parser.parseAlloc('$', parser, allocator, mbs.reader());
         try testing.expectEqualSlices(u8, "Hello World!", reply.string);
         switch (reply.format) {
             else => unreachable,
@@ -116,7 +118,8 @@ test "verbatim" {
     }
 
     {
-        const reply = try Verbatim.Redis.Parser.parseAlloc('=', parser, allocator, MakeVerbatimString().reader());
+        var mvs = MakeVerbatimString();
+        const reply = try Verbatim.Redis.Parser.parseAlloc('=', parser, allocator, mvs.reader());
         try testing.expectEqualSlices(u8, "Oh hello there!", reply.string);
         switch (reply.format) {
             else => unreachable,
@@ -125,7 +128,8 @@ test "verbatim" {
     }
 
     {
-        const reply = try Verbatim.Redis.Parser.parseAlloc('=', parser, allocator, MakeBadVerbatimString().reader());
+        var mbvs = MakeBadVerbatimString();
+        const reply = try Verbatim.Redis.Parser.parseAlloc('=', parser, allocator, mbvs.reader());
         try testing.expectEqualSlices(u8, "t", reply.string);
         switch (reply.format) {
             else => unreachable,
@@ -134,7 +138,8 @@ test "verbatim" {
     }
 
     {
-        const reply = try Verbatim.Redis.Parser.parseAlloc('=', parser, allocator, MakeBadVerbatimString2().reader());
+        var mbvs2 = MakeBadVerbatimString2();
+        const reply = try Verbatim.Redis.Parser.parseAlloc('=', parser, allocator, mbvs2.reader());
         try testing.expectEqualSlices(u8, "", reply.string);
         switch (reply.format) {
             else => unreachable,

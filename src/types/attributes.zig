@@ -60,10 +60,11 @@ test "WithAttribs" {
     const parser = @import("../parser.zig").RESP3Parser;
     const allocator = std.heap.page_allocator;
 
+    var mattr = MakeComplexListWithAttributes();
     const res = try parser.parseAlloc(
         WithAttribs([2]WithAttribs([]WithAttribs(i64))),
         allocator,
-        MakeComplexListWithAttributes().reader(),
+        mattr.reader(),
     );
     try testing.expectEqual(@as(usize, 2), res.attribs.len);
     try testing.expectEqualSlices(u8, "Ciao", res.attribs[0][0].data.String.string);

@@ -15,7 +15,7 @@ pub const SetParser = struct {
     pub fn isSupportedAlloc(comptime T: type) bool {
         // HashMap
         if (@typeInfo(T) == .Struct and @hasDecl(T, "Entry")) {
-            return void == std.meta.fieldInfo(T.Entry, .value_ptr).field_type;
+            return void == std.meta.fieldInfo(T.Entry, .value_ptr).type;
         }
 
         return switch (@typeInfo(T)) {
@@ -31,12 +31,12 @@ pub const SetParser = struct {
     pub fn parseAlloc(comptime T: type, comptime rootParser: type, allocator: std.mem.Allocator, msg: anytype) !T {
         // HASHMAP
         if (@typeInfo(T) == .Struct and @hasDecl(T, "Entry")) {
-            const isManaged = @typeInfo(@TypeOf(T.deinit)).Fn.args.len == 1;
+            const isManaged = @typeInfo(@TypeOf(T.deinit)).Fn.params.len == 1;
 
             // TODO: write real implementation
             var buf: [100]u8 = undefined;
             var end: usize = 0;
-            for (buf, 0..) |*elem, i| {
+            for (&buf, 0..) |*elem, i| {
                 const ch = try msg.readByte();
                 elem.* = ch;
                 if (ch == '\r') {
@@ -57,7 +57,7 @@ pub const SetParser = struct {
                 }
             }
 
-            const KeyType = std.meta.fieldInfo(T.Entry, .key_ptr).field_type;
+            const KeyType = std.meta.fieldInfo(T.Entry, .key_ptr).type;
 
             var foundNil = false;
             var foundErr = false;
@@ -124,15 +124,15 @@ pub const SetParser = struct {
 test "set" {
     const parser = @import("../parser.zig").RESP3Parser;
     const allocator = std.heap.page_allocator;
-
-    const arr = try SetParser.parse([3]i32, parser, MakeSet().reader());
+    var ms = MakeSet();
+    const arr = try SetParser.parse([3]i32, parser, ms.reader());
     try testing.expectEqualSlices(i32, &[3]i32{ 1, 2, 3 }, &arr);
 
-    const sli = try SetParser.parseAlloc([]i64, parser, allocator, MakeSet().reader());
+    const sli = try SetParser.parseAlloc([]i64, parser, allocator, ms.reader());
     defer allocator.free(sli);
     try testing.expectEqualSlices(i64, &[3]i64{ 1, 2, 3 }, sli);
 
-    var hmap = try SetParser.parseAlloc(std.AutoHashMap(i64, void), parser, allocator, MakeSet().reader());
+    var hmap = try SetParser.parseAlloc(std.AutoHashMap(i64, void), parser, allocator, ms.reader());
     defer hmap.deinit();
 
     if (hmap.remove(1)) {} else unreachable;

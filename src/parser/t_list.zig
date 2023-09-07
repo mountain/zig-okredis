@@ -11,7 +11,7 @@ pub const ListParser = struct {
             .Array => true,
             .Struct => |stc| {
                 for (stc.fields) |f|
-                    if (f.field_type == *anyopaque)
+                    if (f.type == *anyopaque)
                         return false;
                 return true;
             },
@@ -72,7 +72,7 @@ pub const ListParser = struct {
         // TODO: write real implementation
         var buf: [100]u8 = undefined;
         var end: usize = 0;
-        for (buf, 0..) |*elem, i| {
+        for (&buf, 0..) |*elem, i| {
             const ch = try msg.readByte();
             elem.* = ch;
             if (ch == '\r') {
@@ -153,9 +153,9 @@ pub const ListParser = struct {
                         };
                     } else {
                         @field(result, field.name) = (if (@hasField(@TypeOf(allocator), "ptr"))
-                            rootParser.parseAlloc(field.field_type, allocator.ptr, msg)
+                            rootParser.parseAlloc(field.type, allocator.ptr, msg)
                         else
-                            rootParser.parse(field.field_type, msg)) catch |err| switch (err) {
+                            rootParser.parse(field.type, msg)) catch |err| switch (err) {
                             else => return err,
                             error.GotNilReply => blk: {
                                 foundNil = true;

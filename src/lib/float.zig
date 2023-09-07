@@ -45,7 +45,7 @@ fn parseFloat(comptime T: type, slice: []const u8) error{ Empty, InvalidCharacte
     var numeral_places: usize = 0;
     for (s, 0..) |ch, i| {
         if (ch == '.') {
-            decimal_point_index = @intCast(isize, i);
+            decimal_point_index = @as(isize, @intCast(i));
             continue;
         }
         if (decimal_point_index == -1)
@@ -58,11 +58,11 @@ fn parseFloat(comptime T: type, slice: []const u8) error{ Empty, InvalidCharacte
     if (decimal_places + numeral_places > 18) return error.TooManyDigits; // f64 has 18 s.f.
 
     // Shift the decimal point into the right place.
-    var n_as_float = @intToFloat(f64, n) / 10;
+    var n_as_float = @as(f64, @floatFromInt(n)) / 10;
 
     if (decimal_point_index != -1) {
         // We counted from the front, we'll insert the decimal point from the back.
-        const decimal_point_index_from_back = @intCast(isize, s.len) - decimal_point_index - 1;
+        const decimal_point_index_from_back = @as(isize, @intCast(s.len)) - decimal_point_index - 1;
 
         {
             var i: isize = 0;
@@ -72,7 +72,7 @@ fn parseFloat(comptime T: type, slice: []const u8) error{ Empty, InvalidCharacte
         }
     }
 
-    var res = @floatCast(T, n_as_float);
+    var res = @as(T, @floatCast(n_as_float));
     if (is_neg) res *= -1;
     return res;
 }
@@ -90,7 +90,7 @@ pub fn main() !void {
             // break;
             total += took;
         }
-        warn("average time: {d} ns\n", @intToFloat(f64, total) / @intToFloat(f64, its));
+        warn("average time: {d} ns\n", @as(f64, @floatFromInt(total)) / @as(f64, @floatFromInt(its)));
     }
 
     {
@@ -103,6 +103,6 @@ pub fn main() !void {
             var took = t.read();
             total += took;
         }
-        warn("average time: {d} ns\n", @intToFloat(f64, total) / @intToFloat(f64, its));
+        warn("average time: {d} ns\n", @as(f64, @floatFromInt(total)) / @as(f64, @floatFromInt(its)));
     }
 }

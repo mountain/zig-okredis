@@ -95,12 +95,14 @@ test "dynamic replies" {
     const allocator = std.heap.page_allocator;
 
     {
-        const reply = try DynamicReply.Redis.Parser.parseAlloc('+', parser, allocator, MakeSimpleString().reader());
+        var msstr = MakeSimpleString();
+        const reply = try DynamicReply.Redis.Parser.parseAlloc('+', parser, allocator, msstr.reader());
         try testing.expectEqualSlices(u8, "Yayyyy I'm a string!", reply.data.String.string);
     }
 
     {
-        const reply = try DynamicReply.Redis.Parser.parseAlloc('*', parser, allocator, MakeComplexList().reader());
+        var mcl = MakeComplexList();
+        const reply = try DynamicReply.Redis.Parser.parseAlloc('*', parser, allocator, mcl.reader());
         try testing.expectEqual(@as(usize, 0), reply.attribs.len);
 
         try testing.expectEqualSlices(u8, "Hello", reply.data.List[0].data.String.string);
@@ -118,7 +120,8 @@ test "dynamic replies" {
     }
 
     {
-        const reply = try DynamicReply.Redis.Parser.parseAlloc('|', parser, allocator, MakeComplexListWithAttributes().reader());
+        var mclattr = MakeComplexListWithAttributes();
+        const reply = try DynamicReply.Redis.Parser.parseAlloc('|', parser, allocator, mclattr.reader());
         try testing.expectEqual(@as(usize, 2), reply.attribs.len);
         try testing.expectEqualSlices(u8, "Ciao", reply.attribs[0][0].data.String.string);
         try testing.expectEqualSlices(u8, "World", reply.attribs[0][1].data.String.string);
