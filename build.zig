@@ -1,41 +1,99 @@
 const std = @import("std");
 const builtin = @import("builtin");
-const Builder = std.build.Builder;
 
-pub fn build(b: *Builder) void {
-    const target = b.standardTargetOptions(.{});
-    const optimize = b.standardOptimizeOption(.{});
+const min_zig_string = "0.11.0";
 
-    _ = b.addModule("okredis", .{
-        .source_file = .{ .path = "src/okredis.zig" },
-    });
+const current_zig = builtin.zig_version;
 
-    const tests = b.addTest(.{
-        .name = "debug test",
-        .root_source_file = .{ .path = "src/okredis.zig" },
-        .target = target,
-        .optimize = optimize,
-    });
-
-    const test_step = b.step("test", "Run all tests in debug mode.");
-    test_step.dependOn(&tests.step);
-
-    const build_docs = b.addSystemCommand(&.{
-        b.zig_exe,
-        "test",
-        "src/okredis.zig",
-        // "-target",
-        // "x86_64-linux",
-        "-femit-docs",
-        "-fno-emit-bin",
-        // "--output-dir",
-        ".",
-    });
-
-    const all_step = b.step("all", "Builds docs and runs all tests");
-    const docs = b.step("docs", "Builds docs");
-    docs.dependOn(&build_docs.step);
-    all_step.dependOn(test_step);
-    all_step.dependOn(docs);
-    b.default_step.dependOn(docs);
+comptime {
+    const min_zig = std.SemanticVersion.parse(min_zig_string) catch unreachable;
+    if (current_zig.order(min_zig) == .lt) {
+        const err_msg = std.fmt.comptimePrint(
+            "Your Zig version v{} does not meet the minimum build requirement of v{}",
+            .{ current_zig, min_zig },
+        );
+        @compileError(err_msg);
+    }
 }
+
+pub fn build(b: *std.Build) void {
+    switch (current_zig.minor) {
+        11 => version_11.build(b),
+        12, 13, 14 => version_12.build(b),
+        else => @compileError("unknown version!"),
+    }
+}
+
+const version_11 = struct {
+    pub fn build(b: *std.Build) void {
+        const target = b.standardTargetOptions(.{});
+        const optimize = b.standardOptimizeOption(.{});
+
+        const msgpack = b.addModule("okredis", .{
+            .source_file = .{
+                .path = "src/okredis.zig",
+            },
+        });
+
+        const test_step = b.step("test", "Run unit tests");
+
+        const msgpack_unit_tests = b.addTest(.{
+            .root_source_file = .{
+                .path = "src/okredis.zig",
+            },
+            .target = target,
+            .optimize = optimize,
+        });
+
+        msgpack_unit_tests.addModule("msgpack", msgpack);
+        const run_msgpack_tests = b.addRunArtifact(msgpack_unit_tests);
+        test_step.dependOn(&run_msgpack_tests.step);
+    }
+};
+
+const version_12 = struct {
+    const Build = std.Build;
+    const Module = Build.Module;
+    const OptimizeMode = std.builtin.OptimizeMode;
+
+    pub fn build(b: *std.Build) void {
+        const target = b.standardTargetOptions(.{});
+        const optimize = b.standardOptimizeOption(.{});
+
+        const msgpack = b.addModule("okredis", .{
+            .root_source_file = b.path(b.pathJoin(&.{ "src", "okredis.zig" })),
+        });
+
+        generateDocs(b, optimize, target);
+
+        const test_step = b.step("test", "Run unit tests");
+
+        const msgpack_unit_tests = b.addTest(.{
+            .root_source_file = b.path(b.pathJoin(&.{ "src", "okredis.zig" })),
+            .target = target,
+            .optimize = optimize,
+        });
+        msgpack_unit_tests.root_module.addImport("msgpack", msgpack);
+        const run_msgpack_tests = b.addRunArtifact(msgpack_unit_tests);
+        test_step.dependOn(&run_msgpack_tests.step);
+    }
+
+    fn generateDocs(b: *Build, optimize: OptimizeMode, target: Build.ResolvedTarget) void {
+        const lib = b.addObject(.{
+            .name = "okredis",
+            .root_source_file = b.path(b.pathJoin(&.{ "src", "okredis.zig" })),
+            .target = target,
+            .optimize = optimize,
+        });
+
+        const docs_step = b.step("docs", "Emit docs");
+
+        const docs_install = b.addInstallDirectory(.{
+            .source_dir = lib.getEmittedDocs(),
+            .install_dir = .prefix,
+            .install_subdir = "docs",
+        });
+
+        docs_step.dependOn(&docs_install.step);
+    }
+};
