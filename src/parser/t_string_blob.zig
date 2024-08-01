@@ -52,7 +52,7 @@ pub const BlobStringParser = struct {
             },
             .Array => |arr| {
                 var res: [arr.len]arr.child = undefined;
-                var bytesSlice = mem.sliceAsBytes(res[0..]);
+                const bytesSlice = mem.sliceAsBytes(res[0..]);
                 if (bytesSlice.len != size) {
                     return error.LengthMismatch;
                 }
@@ -94,7 +94,7 @@ pub const BlobStringParser = struct {
                 if (ptr.size == .C) size += @sizeOf(ptr.child);
 
                 const elemSize = std.math.divExact(usize, size, @sizeOf(ptr.child)) catch return error.LengthMismatch;
-                var res = try allocator.alignedAlloc(ptr.child, @alignOf(T), elemSize);
+                const res = try allocator.alignedAlloc(ptr.child, @alignOf(T), elemSize);
                 errdefer allocator.free(res);
 
                 var bytes = mem.sliceAsBytes(res);
