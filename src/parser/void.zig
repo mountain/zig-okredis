@@ -41,7 +41,7 @@ pub const VoidParser = struct {
                             break;
                         }
                     }
-                    var size = try fmt.parseInt(usize, buf[0..end], 10);
+                    const size = try fmt.parseInt(usize, buf[0..end], 10);
                     try msg.skipBytes(1 + size + 2, .{});
                 },
                 ':', ',', '+', '-' => {
