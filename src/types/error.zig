@@ -87,7 +87,7 @@ pub fn OrErr(comptime T: type) type {
                             }
 
                             try msg.skipBytes(1, .{});
-                            var size = try fmt.parseInt(usize, buf[0..end], 10);
+                            const size = try fmt.parseInt(usize, buf[0..end], 10);
                             var res = Self{ .Err = undefined };
 
                             // Parse the Code part
@@ -203,7 +203,7 @@ pub fn OrFullErr(comptime T: type) type {
                             }
 
                             try msg.skipBytes(1, .{});
-                            var size = try fmt.parseInt(usize, buf[0..end], 10);
+                            const size = try fmt.parseInt(usize, buf[0..end], 10);
                             var res = Self{ .Err = undefined };
                             res.Err.message = &[0]u8{};
 
@@ -235,7 +235,7 @@ pub fn OrFullErr(comptime T: type) type {
                             // Alloc difference:
                             const remainder = size - res.Err.end;
                             if (remainder == 0) return res;
-                            var slice = try allocator.alloc(u8, remainder);
+                            const slice = try allocator.alloc(u8, remainder);
                             errdefer allocator.free(slice);
 
                             try msg.readNoEof(slice);
