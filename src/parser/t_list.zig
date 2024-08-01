@@ -90,7 +90,7 @@ pub const ListParser = struct {
                     @compileError("To decode a slice you need to use sendAlloc / pipeAlloc / transAlloc!");
                 }
 
-                var result = try allocator.ptr.alloc(ptr.child, size);
+                const result = try allocator.ptr.alloc(ptr.child, size);
                 errdefer allocator.ptr.free(result);
                 try decodeArray(ptr.child, result, rootParser, allocator, msg);
                 return result;
