@@ -105,7 +105,7 @@ pub const MapParser = struct {
                     } else {
                         // Differently from the Lists case, here we can't `continue` immediately on fail
                         // because then we would lose count of how many tokens we consumed.
-                        var key = rootParser.parseAlloc(std.meta.fieldInfo(T.Entry, .key_ptr).type, allocator.ptr, msg) catch |err| switch (err) {
+                        const key = rootParser.parseAlloc(std.meta.fieldInfo(T.Entry, .key_ptr).type, allocator.ptr, msg) catch |err| switch (err) {
                             error.GotNilReply => blk: {
                                 foundNil = true;
                                 break :blk undefined;
@@ -116,7 +116,7 @@ pub const MapParser = struct {
                             },
                             else => return err,
                         };
-                        var val = rootParser.parseAlloc(std.meta.fieldInfo(T.Entry, .value_ptr).type, allocator.ptr, msg) catch |err| switch (err) {
+                        const val = rootParser.parseAlloc(std.meta.fieldInfo(T.Entry, .value_ptr).type, allocator.ptr, msg) catch |err| switch (err) {
                             error.GotNilReply => blk: {
                                 foundNil = true;
                                 break :blk undefined;
@@ -339,7 +339,7 @@ pub const MapParser = struct {
                 // we know the array has a child type of [2]X.
                 var foundNil = false;
                 var foundErr = false;
-                var result = try allocator.ptr.alloc(ptr.child, size); // TODO: recover from OOM?
+                const result = try allocator.ptr.alloc(ptr.child, size); // TODO: recover from OOM?
                 errdefer allocator.ptr.free(result);
 
                 for (result) |*couple| {
